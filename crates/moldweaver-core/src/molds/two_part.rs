@@ -296,8 +296,18 @@ fn generate(input: &MoldInput) -> Result<MoldOutput> {
             .map(|c| solid::cylinder_z(*c, -dowel_len * 0.5, dowel_len * 0.5, dowel_d * 0.5, dowel_d * 0.5))
             .collect(),
     );
+    let pitch = dowel_d + 4.0;
+    let loose = union_all(
+        (0..corners.len())
+            .map(|i| {
+                let xy = DVec2::new((i % 2) as f64 * pitch, (i / 2) as f64 * pitch);
+                solid::cylinder_z(xy, 0.0, dowel_len, dowel_d * 0.5, dowel_d * 0.5)
+            })
+            .collect(),
+    );
     parts.push(
         Part::from_solid("Alignment dowels", PartRole::Printed, &dowels)
+            .with_print_mesh(TriMesh::from_manifold(&loose))
             .with_note("Push into the corner sockets so the two box halves line up."),
     );
     if style == "clips" {

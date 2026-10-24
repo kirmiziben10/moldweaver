@@ -1,0 +1,8 @@
+{
+  "format": "moldweaver-project",
+  "version": 1,
+  "model": { "path": "cube.stl" },
+  "mold_type": "two_part_box",
+  "params": {},
+  "printer": "Bambu Lab P2S"
+}

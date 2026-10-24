@@ -45,6 +45,9 @@ pub struct Part {
     pub print_rotation: DQuat,
     /// Short note shown in the parts list (e.g. how to use the part).
     pub note: String,
+    /// Mesh to print instead of the rotated assembly mesh (e.g. loose
+    /// dowels grouped together rather than spread over the box corners).
+    pub print_mesh: Option<TriMesh>,
 }
 
 impl Part {
@@ -57,7 +60,13 @@ impl Part {
             explode: DVec3::ZERO,
             print_rotation: DQuat::IDENTITY,
             note: String::new(),
+            print_mesh: None,
         }
+    }
+
+    pub fn with_print_mesh(mut self, mesh: TriMesh) -> Part {
+        self.print_mesh = Some(mesh);
+        self
     }
 
     pub fn exploded(mut self, by: DVec3) -> Part {

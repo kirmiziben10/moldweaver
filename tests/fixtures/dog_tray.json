@@ -1,0 +1,9 @@
+{
+  "format": "moldweaver-project",
+  "version": 1,
+  "model": { "path": "lowpoly_dog.stl" },
+  "plane": { "tilt_x_deg": 90.0, "tilt_y_deg": 0.0, "spin_deg": 0.0, "offset_mm": -1.0 },
+  "mold_type": "open_tray",
+  "params": { "detachable": true, "clamp_style": "m4", "vents": true },
+  "printer": "Creality Ender 3 V3 SE"
+}

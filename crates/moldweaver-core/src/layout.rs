@@ -67,7 +67,10 @@ struct Item {
 }
 
 fn orient(part: &Part, printer: &PrinterProfile) -> Item {
-    let m = part.mesh.transformed(&DMat4::from_quat(part.print_rotation));
+    let m = match &part.print_mesh {
+        Some(m) => m.clone(),
+        None => part.mesh.transformed(&DMat4::from_quat(part.print_rotation)),
+    };
     let mut b = m.bounds();
     let mut mesh = m.translated(-b.min);
     let fits_xy = |s: DVec3| s.x <= printer.bed_x - 2.0 * SPACING && s.y <= printer.bed_y - 2.0 * SPACING;
@@ -90,26 +93,68 @@ fn orient(part: &Part, printer: &PrinterProfile) -> Item {
     }
 }
 
-/// Shelf packer over a `w` x `d` area. Returns positions for the items that
-/// fit, in input order; `None` for those that did not.
-fn shelf_pack(sizes: &[DVec2], w: f64, d: f64) -> Vec<Option<DVec2>> {
+/// MaxRects packer (best short side fit, 90° rotation allowed) over a
+/// `w` x `d` area. Returns, per input size, its position and whether it
+/// was rotated, or `None` if it did not fit.
+fn maxrects_pack(sizes: &[DVec2], w: f64, d: f64) -> Vec<Option<(DVec2, bool)>> {
+    #[derive(Clone, Copy)]
+    struct R {
+        x: f64,
+        y: f64,
+        w: f64,
+        h: f64,
+    }
+    let mut free = vec![R { x: 0.0, y: 0.0, w: w + SPACING, h: d + SPACING }];
     let mut out = vec![None; sizes.len()];
-    let (mut x, mut y, mut row) = (0.0f64, 0.0f64, 0.0f64);
     for (i, s) in sizes.iter().enumerate() {
-        if s.x > w || s.y > d {
-            continue;
+        // Pad by the spacing; the extra row/column at the far edge is
+        // accounted for by the enlarged free area above.
+        let cands = [(s.x + SPACING, s.y + SPACING, false), (s.y + SPACING, s.x + SPACING, true)];
+        let mut best: Option<(f64, f64, R, bool)> = None;
+        for f in &free {
+            for &(cw, ch, rot) in &cands {
+                if cw <= f.w + 1e-9 && ch <= f.h + 1e-9 {
+                    let short = (f.w - cw).min(f.h - ch);
+                    let long = (f.w - cw).max(f.h - ch);
+                    if best.is_none_or(|b| (short, long) < (b.0, b.1)) {
+                        best = Some((short, long, R { x: f.x, y: f.y, w: cw, h: ch }, rot));
+                    }
+                }
+            }
         }
-        if x > 0.0 && x + s.x > w {
-            x = 0.0;
-            y += row + SPACING;
-            row = 0.0;
+        let Some((_, _, used, rot)) = best else { continue };
+        out[i] = Some((DVec2::new(used.x, used.y), rot));
+        // Split every free rectangle that overlaps the used one.
+        let mut next = Vec::new();
+        for f in &free {
+            let overlap = used.x < f.x + f.w && used.x + used.w > f.x && used.y < f.y + f.h && used.y + used.h > f.y;
+            if !overlap {
+                next.push(*f);
+                continue;
+            }
+            if used.x > f.x {
+                next.push(R { x: f.x, y: f.y, w: used.x - f.x, h: f.h });
+            }
+            if used.x + used.w < f.x + f.w {
+                next.push(R { x: used.x + used.w, y: f.y, w: f.x + f.w - used.x - used.w, h: f.h });
+            }
+            if used.y > f.y {
+                next.push(R { x: f.x, y: f.y, w: f.w, h: used.y - f.y });
+            }
+            if used.y + used.h < f.y + f.h {
+                next.push(R { x: f.x, y: used.y + used.h, w: f.w, h: f.y + f.h - used.y - used.h });
+            }
         }
-        if y + s.y > d {
-            continue;
+        // Drop rectangles contained in others.
+        let contained = |a: &R, b: &R| a.x >= b.x && a.y >= b.y && a.x + a.w <= b.x + b.w && a.y + a.h <= b.y + b.h;
+        let mut pruned: Vec<R> = Vec::new();
+        for (k, a) in next.iter().enumerate() {
+            let dup = next.iter().enumerate().any(|(j, b)| j != k && contained(a, b) && (!contained(b, a) || j < k));
+            if !dup {
+                pruned.push(*a);
+            }
         }
-        out[i] = Some(DVec2::new(x, y));
-        x += s.x + SPACING;
-        row = row.max(s.y);
+        free = pruned;
     }
     out
 }
@@ -117,16 +162,45 @@ fn shelf_pack(sizes: &[DVec2], w: f64, d: f64) -> Vec<Option<DVec2>> {
 /// Arrange the printed parts on the plate of `printer`.
 pub fn arrange(parts: &[&Part], printer: &PrinterProfile) -> Layout {
     let mut items: Vec<Item> = parts.iter().map(|p| orient(p, printer)).collect();
-    // Big parts first.
-    let mut order: Vec<usize> = (0..items.len()).collect();
-    order.sort_by(|&a, &b| {
-        let fa = items[a].size.x * items[a].size.y;
-        let fb = items[b].size.x * items[b].size.y;
-        items[b].size.y.total_cmp(&items[a].size.y).then(fb.total_cmp(&fa))
-    });
     let usable = DVec2::new(printer.bed_x - 2.0 * SPACING, printer.bed_y - 2.0 * SPACING);
+    // Try a few orderings and keep the one that puts the most area on the plate.
+    let n = items.len();
+    let area = |i: usize| items[i].size.x * items[i].size.y;
+    let mut orders: Vec<Vec<usize>> = Vec::new();
+    for key in 0..3 {
+        let mut o: Vec<usize> = (0..n).collect();
+        o.sort_by(|&a, &b| match key {
+            0 => area(b).total_cmp(&area(a)),
+            1 => items[b].size.x.max(items[b].size.y).total_cmp(&items[a].size.x.max(items[a].size.y)),
+            _ => items[b].size.y.total_cmp(&items[a].size.y),
+        });
+        orders.push(o);
+    }
+    let mut best: Option<(f64, Vec<usize>, Vec<Option<(DVec2, bool)>>)> = None;
+    for order in orders {
+        let sizes: Vec<DVec2> = order
+            .iter()
+            .map(|&i| if items[i].fits { items[i].size.truncate() } else { DVec2::splat(f64::INFINITY) })
+            .collect();
+        let packed = maxrects_pack(&sizes, usable.x, usable.y);
+        let placed_area: f64 = order.iter().zip(&packed).filter(|(_, p)| p.is_some()).map(|(&i, _)| area(i)).sum();
+        if best.as_ref().is_none_or(|b| placed_area > b.0 + 1e-9) {
+            best = Some((placed_area, order, packed));
+        }
+    }
+    let (_, order, packed) = best.unwrap_or_default();
+    // Apply rotations chosen by the packer.
+    for (k, &i) in order.iter().enumerate() {
+        if let Some((_, true)) = packed[k] {
+            let r = DMat4::from_quat(DQuat::from_rotation_z(std::f64::consts::FRAC_PI_2));
+            let m = items[i].mesh.transformed(&r);
+            let b = m.bounds();
+            items[i].mesh = m.translated(-b.min);
+            items[i].size = items[i].mesh.bounds().size();
+        }
+    }
     let sizes: Vec<DVec2> = order.iter().map(|&i| items[i].size.truncate()).collect();
-    let packed = shelf_pack(&sizes, usable.x, usable.y);
+    let packed: Vec<Option<DVec2>> = packed.iter().map(|p| p.map(|(pos, _)| pos)).collect();
 
     // Centre the packed group on the plate.
     let mut lo = DVec2::splat(f64::INFINITY);
@@ -213,6 +287,7 @@ mod tests {
             explode: DVec3::ZERO,
             print_rotation: DQuat::IDENTITY,
             note: String::new(),
+            print_mesh: None,
         }
     }
 

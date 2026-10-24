@@ -1,0 +1,9 @@
+{
+  "format": "moldweaver-project",
+  "version": 1,
+  "model": { "path": "sphere.stl" },
+  "plane": { "tilt_x_deg": 0.0, "tilt_y_deg": 0.0, "spin_deg": 0.0, "offset_mm": 0.0 },
+  "mold_type": "two_part_box",
+  "params": { "margin": 8.0, "key_shape": "cone", "clamp_style": "clips", "price_per_kg": 35.0 },
+  "printer": "Creality Ender 3 V3 SE"
+}

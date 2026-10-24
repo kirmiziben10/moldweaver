@@ -1,0 +1,9 @@
+{
+  "format": "moldweaver-project",
+  "version": 1,
+  "model": { "path": "lowpoly_dog.stl" },
+  "plane": { "tilt_x_deg": 90.0, "tilt_y_deg": 0.0, "spin_deg": 0.0, "offset_mm": 0.0 },
+  "mold_type": "two_part_box",
+  "params": { "margin": 10.0, "clamp_style": "m3" },
+  "printer": "Bambu Lab P2S"
+}
