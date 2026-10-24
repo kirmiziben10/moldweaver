@@ -1,0 +1,9 @@
+/target
+/flatpak/build-dir
+/flatpak/repo
+/flatpak/.flatpak-builder
+/flatpak/vendor
+/flatpak/*.flatpak
+*.3mf
+!tests/fixtures/*.3mf
+!crates/*/tests/fixtures/*.3mf

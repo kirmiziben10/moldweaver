@@ -1,0 +1,8 @@
+{
+  "format": "moldweaver-printers",
+  "version": 1,
+  "printers": [
+    { "name": "Bambu Lab P2S", "bed_x": 256.0, "bed_y": 256.0, "max_z": 256.0 },
+    { "name": "Creality Ender 3 V3 SE", "bed_x": 220.0, "bed_y": 220.0, "max_z": 250.0 }
+  ]
+}
