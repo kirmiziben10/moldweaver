@@ -26,9 +26,7 @@ pub fn read_obj(text: &str) -> Result<TriMesh> {
                 let mut idx = Vec::new();
                 for tok in it {
                     let first = tok.split('/').next().unwrap_or("");
-                    let i: i64 = first
-                        .parse()
-                        .context(format!("line {}: bad face index '{tok}'", lineno + 1))?;
+                    let i: i64 = first.parse().context(format!("line {}: bad face index '{tok}'", lineno + 1))?;
                     let n = mesh.positions.len() as i64;
                     let resolved = if i < 0 { n + i } else { i - 1 };
                     if resolved < 0 || resolved >= n {

@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=MoldWeaver
+GenericName=Silicone Mold Box Generator
+Comment=Turn 3D models into 3D-printable mold boxes for silicone casting
+Exec=moldweaver %f
+Icon=io.github.moldweaver.MoldWeaver
+Terminal=false
+Categories=Graphics;3DGraphics;Engineering;
+Keywords=mold;mould;silicone;casting;resin;3D printing;3MF;STL;
+MimeType=model/stl;model/obj;model/3mf;application/vnd.ms-3mfdocument;
+StartupWMClass=io.github.moldweaver.MoldWeaver

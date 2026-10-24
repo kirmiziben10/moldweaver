@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.moldweaver.MoldWeaver</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>MoldWeaver</name>
+  <summary>Generate 3D-printable mold boxes for silicone casting</summary>
+  <description>
+    <p>
+      MoldWeaver turns a 3D model into 3D-printable mold boxes for silicone
+      casting. Load a model, place the parting plane (or let MoldWeaver
+      suggest one), tune the settings and export a single 3MF with every mold
+      part laid out on your printer's plate.
+    </p>
+    <ul>
+      <li>Two-part split box with a printed parting board, so you can pour both silicone halves without clay</li>
+      <li>Open tray (one-part) molds for flat-backed models</li>
+      <li>Undercut highlighting and automatic parting plane suggestions</li>
+      <li>Pour spout, air vents, registration keys, bolt flanges, zip-tie slots and printed clamps</li>
+      <li>Silicone volume, weight and cost estimate per pour</li>
+      <li>Exports 3MF that opens in Bambu Studio and OrcaSlicer</li>
+      <li>Headless batch mode for scripting</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">io.github.moldweaver.MoldWeaver.desktop</launchable>
+  <url type="homepage">https://github.com/kirmiziben10/moldweaver</url>
+  <url type="bugtracker">https://github.com/kirmiziben10/moldweaver/issues</url>
+  <developer id="io.github.moldweaver">
+    <name>MoldWeaver contributors</name>
+  </developer>
+  <content_rating type="oars-1.1"/>
+  <provides>
+    <binary>moldweaver</binary>
+  </provides>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+  <requires>
+    <display_length compare="ge">900</display_length>
+  </requires>
+  <categories>
+    <category>Graphics</category>
+    <category>Engineering</category>
+  </categories>
+  <releases>
+    <release version="0.1.0" date="2026-10-24">
+      <description>
+        <p>First release: two-part split box and open tray molds, plane suggestions, 3MF export.</p>
+      </description>
+    </release>
+  </releases>
+</component>

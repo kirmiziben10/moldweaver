@@ -250,7 +250,8 @@ fn tray_detachable_base_with_bolts() {
     let p = params(&[("detachable", ParamValue::Bool(true)), ("vents", ParamValue::Bool(true))]);
     let g = gen(&cube, plane, "open_tray", &p);
     assert_all_watertight(&g);
-    let names: Vec<&str> = g.output.parts.iter().filter(|p| p.role == PartRole::Printed).map(|p| p.name.as_str()).collect();
+    let names: Vec<&str> =
+        g.output.parts.iter().filter(|p| p.role == PartRole::Printed).map(|p| p.name.as_str()).collect();
     assert_eq!(names, vec!["Tray walls", "Tray base"]);
     let walls = solid_of(&g, "Tray walls");
     let base = solid_of(&g, "Tray base");
@@ -262,7 +263,8 @@ fn plane_that_misses_the_model_is_an_error() {
     let cube = cuboid(DVec3::ZERO, DVec3::splat(20.0));
     let m = molds::find("two_part_box").unwrap();
     let plane = PartingPlane { offset_mm: 30.0, ..Default::default() };
-    let err = pipeline::generate(&cube, &plane, m.as_ref(), &ParamValues::default(), &AtomicBool::new(false)).unwrap_err();
+    let err =
+        pipeline::generate(&cube, &plane, m.as_ref(), &ParamValues::default(), &AtomicBool::new(false)).unwrap_err();
     assert!(format!("{err:#}").contains("parting plane"));
 }
 
@@ -270,7 +272,13 @@ fn plane_that_misses_the_model_is_an_error() {
 fn cancelled_job_stops() {
     let cube = cuboid(DVec3::ZERO, DVec3::splat(20.0));
     let m = molds::find("two_part_box").unwrap();
-    let r = pipeline::generate(&cube, &PartingPlane::default(), m.as_ref(), &ParamValues::default(), &AtomicBool::new(true));
+    let r = pipeline::generate(
+        &cube,
+        &PartingPlane::default(),
+        m.as_ref(),
+        &ParamValues::default(),
+        &AtomicBool::new(true),
+    );
     assert!(r.unwrap_err().downcast_ref::<molds::Cancelled>().is_some());
 }
 
@@ -295,4 +303,34 @@ fn tilted_plane_matches_axis_aligned_result() {
     let g1 = gen(&tilted, best.unwrap().1, "two_part_box", &params(&plain()));
     assert!(close(g1.output.report.cavity_ml, g0.output.report.cavity_ml, 0.01));
     assert!(close(g1.output.report.silicone_ml, g0.output.report.silicone_ml, 0.01));
+}
+
+#[test]
+fn undercut_safe_board_pulls_straight_off_the_dog() {
+    let dog = moldweaver_core::io::load_model(std::path::Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/fixtures/lowpoly_dog.stl"
+    )))
+    .unwrap();
+    // Split the standing dog through its body: the legs below the plane have
+    // undercut-free sides but the belly overhangs them.
+    let plane = PartingPlane { offset_mm: 4.0, ..Default::default() };
+    let collisions = |safe: bool| {
+        let p = params(&[("board_safe", ParamValue::Bool(safe)), ("keys", ParamValue::Bool(false))]);
+        let g = gen(&dog, plane, "two_part_box", &p);
+        assert_all_watertight(&g);
+        let board = solid_of(&g, "Parting board");
+        let model = g.model_mold.to_manifold().unwrap();
+        // Pull the board down in steps and measure overlap with the model.
+        (1..=40)
+            .map(|k| {
+                let moved = board.translate(solid::v3(DVec3::new(0.0, 0.0, -0.5 * k as f64)));
+                moved.intersection(&model).volume()
+            })
+            .fold(0.0, f64::max)
+    };
+    let safe = collisions(true);
+    let exact = collisions(false);
+    assert!(safe < 1e-3, "safe board collides: {safe}");
+    assert!(exact > 1.0, "the exact board should lock on this plane: {exact}");
 }

@@ -1,0 +1,42 @@
+# Build with flatpak/build.sh (it vendors the Rust crates first so the
+# Flatpak build itself runs offline).
+id: io.github.moldweaver.MoldWeaver
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: moldweaver
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  # GPU access for the wgpu 3D view (Vulkan, falls back to OpenGL).
+  - --device=dri
+  # Projects reference model files by path next to the project file, which
+  # the file chooser portal alone cannot grant.
+  - --filesystem=home
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin
+  env:
+    CARGO_HOME: /run/build/moldweaver/cargo-home
+    CARGO_NET_OFFLINE: 'true'
+modules:
+  - name: moldweaver
+    buildsystem: simple
+    build-commands:
+      - mkdir -p .cargo && cp flatpak/cargo-vendor-config.toml .cargo/config.toml
+      - cargo --offline build --release --locked -p moldweaver
+      - install -Dm755 target/release/moldweaver /app/bin/moldweaver
+      - install -Dm644 data/io.github.moldweaver.MoldWeaver.desktop /app/share/applications/io.github.moldweaver.MoldWeaver.desktop
+      - install -Dm644 data/io.github.moldweaver.MoldWeaver.metainfo.xml /app/share/metainfo/io.github.moldweaver.MoldWeaver.metainfo.xml
+      - install -Dm644 data/icons/io.github.moldweaver.MoldWeaver.svg /app/share/icons/hicolor/scalable/apps/io.github.moldweaver.MoldWeaver.svg
+    sources:
+      - type: dir
+        path: ..
+        skip:
+          - target
+          - .git
+          - flatpak/build-dir
+          - flatpak/repo
+          - flatpak/.flatpak-builder

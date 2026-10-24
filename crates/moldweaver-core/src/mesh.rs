@@ -15,10 +15,7 @@ pub struct Aabb {
 }
 
 impl Aabb {
-    pub const EMPTY: Aabb = Aabb {
-        min: DVec3::splat(f64::INFINITY),
-        max: DVec3::splat(f64::NEG_INFINITY),
-    };
+    pub const EMPTY: Aabb = Aabb { min: DVec3::splat(f64::INFINITY), max: DVec3::splat(f64::NEG_INFINITY) };
 
     pub fn from_points<'a>(points: impl IntoIterator<Item = &'a DVec3>) -> Aabb {
         let mut b = Aabb::EMPTY;
@@ -38,10 +35,7 @@ impl Aabb {
     }
 
     pub fn union(&self, other: &Aabb) -> Aabb {
-        Aabb {
-            min: self.min.min(other.min),
-            max: self.max.max(other.max),
-        }
+        Aabb { min: self.min.min(other.min), max: self.max.max(other.max) }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -65,17 +59,11 @@ impl Aabb {
     }
 
     pub fn expanded(&self, by: DVec3) -> Aabb {
-        Aabb {
-            min: self.min - by,
-            max: self.max + by,
-        }
+        Aabb { min: self.min - by, max: self.max + by }
     }
 
     pub fn translated(&self, by: DVec3) -> Aabb {
-        Aabb {
-            min: self.min + by,
-            max: self.max + by,
-        }
+        Aabb { min: self.min + by, max: self.max + by }
     }
 }
 
@@ -108,10 +96,7 @@ pub struct TopologyReport {
 impl TopologyReport {
     /// Closed, 2-manifold and consistently oriented.
     pub fn is_watertight(&self) -> bool {
-        self.boundary_edges == 0
-            && self.non_manifold_edges == 0
-            && self.inconsistent_edges == 0
-            && self.triangles > 0
+        self.boundary_edges == 0 && self.non_manifold_edges == 0 && self.inconsistent_edges == 0 && self.triangles > 0
     }
 }
 
@@ -126,10 +111,7 @@ pub enum SolidError {
 
 impl TriMesh {
     pub fn new(positions: Vec<DVec3>, triangles: Vec<[u32; 3]>) -> TriMesh {
-        TriMesh {
-            positions,
-            triangles,
-        }
+        TriMesh { positions, triangles }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -142,11 +124,7 @@ impl TriMesh {
 
     pub fn tri(&self, i: usize) -> [DVec3; 3] {
         let t = self.triangles[i];
-        [
-            self.positions[t[0] as usize],
-            self.positions[t[1] as usize],
-            self.positions[t[2] as usize],
-        ]
+        [self.positions[t[0] as usize], self.positions[t[1] as usize], self.positions[t[2] as usize]]
     }
 
     /// Area-weighted (unnormalised, length = 2 * area) normal of triangle `i`.
@@ -195,22 +173,14 @@ impl TriMesh {
     }
 
     pub fn translated(&self, by: DVec3) -> TriMesh {
-        TriMesh {
-            positions: self.positions.iter().map(|p| *p + by).collect(),
-            triangles: self.triangles.clone(),
-        }
+        TriMesh { positions: self.positions.iter().map(|p| *p + by).collect(), triangles: self.triangles.clone() }
     }
 
     /// Append another mesh (no welding).
     pub fn append(&mut self, other: &TriMesh) {
         let base = self.positions.len() as u32;
         self.positions.extend_from_slice(&other.positions);
-        self.triangles.extend(
-            other
-                .triangles
-                .iter()
-                .map(|t| [t[0] + base, t[1] + base, t[2] + base]),
-        );
+        self.triangles.extend(other.triangles.iter().map(|t| [t[0] + base, t[1] + base, t[2] + base]));
     }
 
     /// Smooth per-vertex normals (area weighted).
@@ -232,8 +202,7 @@ impl TriMesh {
         let diag = self.bounds().diagonal().max(1e-9);
         let area_eps = (diag * 1e-9).powi(2);
         for (i, t) in self.triangles.iter().enumerate() {
-            if t[0] == t[1] || t[1] == t[2] || t[0] == t[2] || self.tri_cross(i).length_squared() <= area_eps
-            {
+            if t[0] == t[1] || t[1] == t[2] || t[0] == t[2] || self.tri_cross(i).length_squared() <= area_eps {
                 degenerate += 1;
             }
             for k in 0..3 {
@@ -288,13 +257,7 @@ impl TriMesh {
     pub fn welded(&self, tol: f64) -> TriMesh {
         let tol = tol.max(1e-12);
         let inv = 1.0 / tol;
-        let key = |p: DVec3| {
-            (
-                (p.x * inv).round() as i64,
-                (p.y * inv).round() as i64,
-                (p.z * inv).round() as i64,
-            )
-        };
+        let key = |p: DVec3| ((p.x * inv).round() as i64, (p.y * inv).round() as i64, (p.z * inv).round() as i64);
         let mut map: HashMap<(i64, i64, i64), u32> = HashMap::new();
         let mut positions: Vec<DVec3> = Vec::new();
         let mut remap = Vec::with_capacity(self.positions.len());
@@ -307,9 +270,7 @@ impl TriMesh {
                 for dy in -1..=1 {
                     for dz in -1..=1 {
                         if let Some(&idx) = map.get(&(k.0 + dx, k.1 + dy, k.2 + dz)) {
-                            if positions[idx as usize] == *p
-                                || (positions[idx as usize] - *p).length() <= tol
-                            {
+                            if positions[idx as usize] == *p || (positions[idx as usize] - *p).length() <= tol {
                                 found = Some(idx);
                                 break 'outer;
                             }
@@ -328,16 +289,9 @@ impl TriMesh {
             };
             remap.push(idx);
         }
-        let triangles = self
-            .triangles
-            .iter()
-            .map(|t| [remap[t[0] as usize], remap[t[1] as usize], remap[t[2] as usize]])
-            .collect();
-        TriMesh {
-            positions,
-            triangles,
-        }
-        .compacted()
+        let triangles =
+            self.triangles.iter().map(|t| [remap[t[0] as usize], remap[t[1] as usize], remap[t[2] as usize]]).collect();
+        TriMesh { positions, triangles }.compacted()
     }
 
     /// Default weld tolerance for imported meshes, relative to model size.
@@ -362,10 +316,7 @@ impl TriMesh {
             }
             triangles.push(nt);
         }
-        TriMesh {
-            positions,
-            triangles,
-        }
+        TriMesh { positions, triangles }
     }
 
     /// Convert to a `Manifold` solid. Fails unless the mesh is a closed
@@ -383,18 +334,14 @@ impl TriMesh {
     }
 
     pub fn to_mesh_gl64(&self) -> MeshGL64 {
-        let mut mesh = MeshGL64 {
-            num_prop: 3,
-            ..Default::default()
-        };
+        let mut mesh = MeshGL64 { num_prop: 3, ..Default::default() };
         mesh.vert_properties.reserve(self.positions.len() * 3);
         for p in &self.positions {
             mesh.vert_properties.extend_from_slice(&[p.x, p.y, p.z]);
         }
         mesh.tri_verts.reserve(self.triangles.len() * 3);
         for t in &self.triangles {
-            mesh.tri_verts
-                .extend_from_slice(&[t[0] as u64, t[1] as u64, t[2] as u64]);
+            mesh.tri_verts.extend_from_slice(&[t[0] as u64, t[1] as u64, t[2] as u64]);
         }
         mesh
     }
@@ -402,20 +349,9 @@ impl TriMesh {
     pub fn from_manifold(m: &Manifold) -> TriMesh {
         let gl = m.get_mesh_gl64(-1);
         let np = (gl.num_prop as usize).max(3);
-        let positions = gl
-            .vert_properties
-            .chunks_exact(np)
-            .map(|c| DVec3::new(c[0], c[1], c[2]))
-            .collect();
-        let triangles = gl
-            .tri_verts
-            .chunks_exact(3)
-            .map(|c| [c[0] as u32, c[1] as u32, c[2] as u32])
-            .collect();
-        TriMesh {
-            positions,
-            triangles,
-        }
+        let positions = gl.vert_properties.chunks_exact(np).map(|c| DVec3::new(c[0], c[1], c[2])).collect();
+        let triangles = gl.tri_verts.chunks_exact(3).map(|c| [c[0] as u32, c[1] as u32, c[2] as u32]).collect();
+        TriMesh { positions, triangles }
     }
 }
 
@@ -481,8 +417,7 @@ pub fn repair(mesh: &TriMesh) -> (TriMesh, RepairReport) {
     let mut seen: HashMap<[u32; 3], usize> = HashMap::new();
     let mut keep: Vec<Option<[u32; 3]>> = Vec::with_capacity(welded.triangles.len());
     for (i, t) in welded.triangles.iter().enumerate() {
-        if t[0] == t[1] || t[1] == t[2] || t[0] == t[2] || welded.tri_cross(i).length_squared() <= area_eps
-        {
+        if t[0] == t[1] || t[1] == t[2] || t[0] == t[2] || welded.tri_cross(i).length_squared() <= area_eps {
             report.removed_degenerate += 1;
             keep.push(None);
             continue;
@@ -506,11 +441,7 @@ pub fn repair(mesh: &TriMesh) -> (TriMesh, RepairReport) {
         seen.insert(key, i);
         keep.push(Some(*t));
     }
-    let mut m = TriMesh {
-        positions: welded.positions,
-        triangles: keep.into_iter().flatten().collect(),
-    }
-    .compacted();
+    let mut m = TriMesh { positions: welded.positions, triangles: keep.into_iter().flatten().collect() }.compacted();
 
     report.flipped_triangles = orient_consistently(&mut m);
     report.holes_filled = fill_holes(&mut m);
@@ -626,7 +557,7 @@ fn fill_holes(m: &mut TriMesh) -> usize {
     // runs the other way round (b->a) so the filling faces match.
     let mut next: HashMap<u32, Vec<u32>> = HashMap::new();
     let mut boundary = 0;
-    for (&(a, b), _) in count.iter() {
+    for &(a, b) in count.keys() {
         if !count.contains_key(&(b, a)) {
             next.entry(b).or_default().push(a);
             boundary += 1;
@@ -639,9 +570,7 @@ fn fill_holes(m: &mut TriMesh) -> usize {
     let mut new_tris = Vec::new();
     let starts: Vec<u32> = next.keys().copied().collect();
     for s in starts {
-        loop {
-            let Some(list) = next.get_mut(&s) else { break };
-            let Some(first) = list.pop() else { break };
+        while let Some(first) = next.get_mut(&s).and_then(|l| l.pop()) {
             let mut lp = vec![s];
             let mut cur = first;
             let mut ok = true;
@@ -685,9 +614,7 @@ struct DisjointSet {
 
 impl DisjointSet {
     fn new(n: usize) -> Self {
-        DisjointSet {
-            parent: (0..n).collect(),
-        }
+        DisjointSet { parent: (0..n).collect() }
     }
     fn find(&mut self, mut x: usize) -> usize {
         while self.parent[x] != x {
@@ -711,11 +638,7 @@ pub mod primitives {
     /// Axis-aligned box from `min` to `max`.
     pub fn cuboid(min: DVec3, max: DVec3) -> TriMesh {
         let p = |x: bool, y: bool, z: bool| {
-            DVec3::new(
-                if x { max.x } else { min.x },
-                if y { max.y } else { min.y },
-                if z { max.z } else { min.z },
-            )
+            DVec3::new(if x { max.x } else { min.x }, if y { max.y } else { min.y }, if z { max.z } else { min.z })
         };
         let positions = vec![
             p(false, false, false),
@@ -741,10 +664,7 @@ pub mod primitives {
             [3, 0, 4],
             [3, 4, 7],
         ];
-        TriMesh {
-            positions,
-            triangles,
-        }
+        TriMesh { positions, triangles }
     }
 
     /// UV sphere.
@@ -754,9 +674,7 @@ pub mod primitives {
             let phi = std::f64::consts::PI * i as f64 / rings as f64;
             for j in 0..segments {
                 let th = std::f64::consts::TAU * j as f64 / segments as f64;
-                positions.push(
-                    center + DVec3::new(phi.sin() * th.cos(), phi.sin() * th.sin(), phi.cos()) * r,
-                );
+                positions.push(center + DVec3::new(phi.sin() * th.cos(), phi.sin() * th.sin(), phi.cos()) * r);
             }
         }
         positions.push(center - DVec3::Z * r);
@@ -779,10 +697,7 @@ pub mod primitives {
         for j in 0..s {
             triangles.push([bottom, last + (j + 1) % s, last + j]);
         }
-        TriMesh {
-            positions,
-            triangles,
-        }
+        TriMesh { positions, triangles }
     }
 }
 

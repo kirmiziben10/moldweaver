@@ -87,10 +87,8 @@ pub fn save_user_profiles(path: &Path, printers: &[PrinterProfile]) -> Result<()
 /// Presets followed by user profiles (a user profile with a preset's name
 /// replaces it).
 pub fn all_profiles(user: &[PrinterProfile]) -> Vec<PrinterProfile> {
-    let mut all: Vec<PrinterProfile> = presets()
-        .into_iter()
-        .filter(|p| !user.iter().any(|u| u.name == p.name))
-        .collect();
+    let mut all: Vec<PrinterProfile> =
+        presets().into_iter().filter(|p| !user.iter().any(|u| u.name == p.name)).collect();
     all.extend(user.iter().cloned());
     all
 }

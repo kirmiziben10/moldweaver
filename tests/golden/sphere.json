@@ -1,0 +1,93 @@
+{
+  "cavity_ml": 178.7,
+  "model_ml": 33.2,
+  "mold_type": "two_part_box",
+  "parts": [
+    {
+      "name": "Box half A (top)",
+      "role": "printed",
+      "volume_ml": 33.1
+    },
+    {
+      "name": "Box half B (bottom)",
+      "role": "printed",
+      "volume_ml": 33.1
+    },
+    {
+      "name": "Parting board",
+      "role": "printed",
+      "volume_ml": 71.2
+    },
+    {
+      "name": "Base plate",
+      "role": "printed",
+      "volume_ml": 15.4
+    },
+    {
+      "name": "Spout & vent rods",
+      "role": "printed",
+      "volume_ml": 3.5
+    },
+    {
+      "name": "Alignment dowels",
+      "role": "printed",
+      "volume_ml": 0.4
+    },
+    {
+      "name": "Clamp 1",
+      "role": "printed",
+      "volume_ml": 1.4
+    },
+    {
+      "name": "Clamp 2",
+      "role": "printed",
+      "volume_ml": 1.4
+    },
+    {
+      "name": "Clamp 3",
+      "role": "printed",
+      "volume_ml": 1.4
+    },
+    {
+      "name": "Clamp 4",
+      "role": "printed",
+      "volume_ml": 1.4
+    },
+    {
+      "name": "Clamp 5",
+      "role": "printed",
+      "volume_ml": 1.4
+    },
+    {
+      "name": "Clamp 6",
+      "role": "printed",
+      "volume_ml": 1.4
+    },
+    {
+      "name": "Clamp 7",
+      "role": "printed",
+      "volume_ml": 1.4
+    },
+    {
+      "name": "Clamp 8",
+      "role": "printed",
+      "volume_ml": 1.4
+    },
+    {
+      "name": "Silicone A (pour 1)",
+      "role": "silicone-pour-1",
+      "volume_ml": 71.9
+    },
+    {
+      "name": "Silicone B (pour 2)",
+      "role": "silicone-pour-2",
+      "volume_ml": 73.0
+    }
+  ],
+  "pours_ml": [
+    71.9,
+    73.0
+  ],
+  "printer": "Creality Ender 3 V3 SE",
+  "silicone_ml": 145.0
+}

@@ -1,0 +1,53 @@
+{
+  "cavity_ml": 127.2,
+  "model_ml": 27.0,
+  "mold_type": "two_part_box",
+  "parts": [
+    {
+      "name": "Box half A (top)",
+      "role": "printed",
+      "volume_ml": 27.4
+    },
+    {
+      "name": "Box half B (bottom)",
+      "role": "printed",
+      "volume_ml": 27.4
+    },
+    {
+      "name": "Parting board",
+      "role": "printed",
+      "volume_ml": 49.1
+    },
+    {
+      "name": "Base plate",
+      "role": "printed",
+      "volume_ml": 12.9
+    },
+    {
+      "name": "Spout & vent rods",
+      "role": "printed",
+      "volume_ml": 4.9
+    },
+    {
+      "name": "Alignment dowels",
+      "role": "printed",
+      "volume_ml": 0.4
+    },
+    {
+      "name": "Silicone A (pour 1)",
+      "role": "silicone-pour-1",
+      "volume_ml": 48.8
+    },
+    {
+      "name": "Silicone B (pour 2)",
+      "role": "silicone-pour-2",
+      "volume_ml": 50.6
+    }
+  ],
+  "pours_ml": [
+    48.8,
+    50.6
+  ],
+  "printer": "Bambu Lab P2S",
+  "silicone_ml": 99.4
+}

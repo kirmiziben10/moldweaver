@@ -27,12 +27,7 @@ pub struct PartingPlane {
 
 impl Default for PartingPlane {
     fn default() -> Self {
-        PartingPlane {
-            tilt_x_deg: 0.0,
-            tilt_y_deg: 0.0,
-            spin_deg: 0.0,
-            offset_mm: 0.0,
-        }
+        PartingPlane { tilt_x_deg: 0.0, tilt_y_deg: 0.0, spin_deg: 0.0, offset_mm: 0.0 }
     }
 }
 
@@ -55,12 +50,7 @@ impl PartingPlane {
         // rotation() * Z = (sin ty, -sin tx cos ty, cos tx cos ty)
         let ty = d.x.clamp(-1.0, 1.0).asin();
         let tx = (-d.y).atan2(d.z);
-        PartingPlane {
-            tilt_x_deg: tx.to_degrees(),
-            tilt_y_deg: ty.to_degrees(),
-            spin_deg,
-            offset_mm,
-        }
+        PartingPlane { tilt_x_deg: tx.to_degrees(), tilt_y_deg: ty.to_degrees(), spin_deg, offset_mm }
     }
 
     /// Range of valid offsets for a model: the plane must cut the model.
@@ -103,17 +93,11 @@ impl MoldFrame {
         }
         let shift = DVec3::new(-b.center().x, -b.center().y, -plane.offset_mm);
         let mold_from_model = DMat4::from_translation(shift) * rotate;
-        MoldFrame {
-            mold_from_model,
-            model_from_mold: mold_from_model.inverse(),
-        }
+        MoldFrame { mold_from_model, model_from_mold: mold_from_model.inverse() }
     }
 
     pub fn identity() -> MoldFrame {
-        MoldFrame {
-            mold_from_model: DMat4::IDENTITY,
-            model_from_mold: DMat4::IDENTITY,
-        }
+        MoldFrame { mold_from_model: DMat4::IDENTITY, model_from_mold: DMat4::IDENTITY }
     }
 
     pub fn to_mold(&self, model: &TriMesh) -> TriMesh {
@@ -133,13 +117,7 @@ mod tests {
 
     #[test]
     fn from_normal_roundtrip() {
-        for d in [
-            DVec3::Z,
-            DVec3::X,
-            DVec3::new(0.3, -0.4, 0.8),
-            DVec3::new(-0.5, 0.5, -0.2),
-            DVec3::NEG_Y,
-        ] {
+        for d in [DVec3::Z, DVec3::X, DVec3::new(0.3, -0.4, 0.8), DVec3::new(-0.5, 0.5, -0.2), DVec3::NEG_Y] {
             let p = PartingPlane::from_normal(d, 17.0, 3.0);
             assert!((p.normal() - d.normalize()).length() < 1e-9, "{d:?} -> {:?}", p.normal());
         }
@@ -148,19 +126,13 @@ mod tests {
     #[test]
     fn frame_puts_plane_at_zero() {
         let m = cuboid(DVec3::new(10.0, 20.0, 30.0), DVec3::new(20.0, 40.0, 70.0));
-        let plane = PartingPlane {
-            offset_mm: 5.0,
-            ..Default::default()
-        };
+        let plane = PartingPlane { offset_mm: 5.0, ..Default::default() };
         let f = MoldFrame::new(&m, &plane);
         let b = f.to_mold(&m).bounds();
         assert!((b.min.z + 25.0).abs() < 1e-9 && (b.max.z - 15.0).abs() < 1e-9);
         assert!(b.center().x.abs() < 1e-9 && b.center().y.abs() < 1e-9);
         // Tilted 90 degrees about Y: the old X axis becomes the pull axis.
-        let plane = PartingPlane {
-            tilt_y_deg: 90.0,
-            ..Default::default()
-        };
+        let plane = PartingPlane { tilt_y_deg: 90.0, ..Default::default() };
         let b = MoldFrame::new(&m, &plane).to_mold(&m).bounds();
         assert!((b.size().z - 10.0).abs() < 1e-9, "{b:?}");
     }

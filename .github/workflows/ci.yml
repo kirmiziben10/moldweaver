@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: Format
+        run: cargo fmt --all -- --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Tests
+        run: cargo test --workspace --release
+      - name: Batch smoke test
+        run: |
+          cargo run --release -- --batch tests/fixtures/dog.json -o dog.3mf --report dog-report.json
+          cargo run --release -- --batch tests/fixtures/cube.stl -o cube.3mf --suggest --mold open_tray
