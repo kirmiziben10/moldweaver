@@ -3,7 +3,9 @@
 /flatpak/repo
 /flatpak/.flatpak-builder
 /flatpak/vendor
+/flatpak/cargo-vendor-config.toml
 /flatpak/*.flatpak
 *.3mf
 !tests/fixtures/*.3mf
 !crates/*/tests/fixtures/*.3mf
+/.flatpak-builder
