@@ -129,8 +129,10 @@ fn generate(input: &MoldInput) -> Result<MoldOutput> {
     let sock_depth = (ft - 1.0).max(1.2);
     let sock_r = solid::hole_radius(dowel_d + tol);
     let corners = features::corner_positions(outer, fw);
-    let sockets_a: Vec<Manifold> = corners.iter().map(|c| solid::cylinder_z(*c, -0.01, sock_depth, sock_r, sock_r)).collect();
-    let sockets_b: Vec<Manifold> = corners.iter().map(|c| solid::cylinder_z(*c, -sock_depth, 0.01, sock_r, sock_r)).collect();
+    let sockets_a: Vec<Manifold> =
+        corners.iter().map(|c| solid::cylinder_z(*c, -0.01, sock_depth, sock_r, sock_r)).collect();
+    let sockets_b: Vec<Manifold> =
+        corners.iter().map(|c| solid::cylinder_z(*c, -sock_depth, 0.01, sock_r, sock_r)).collect();
 
     let ring_a_body = union_all(vec![
         cuboid(outer.min.extend(0.0), outer.max.extend(cz1)),
@@ -170,11 +172,8 @@ fn generate(input: &MoldInput) -> Result<MoldOutput> {
         model.clone()
     };
     input.check_cancel()?;
-    let key_pos = if p.b("keys") {
-        features::place_keys(rect0, &Section::of(model, 0.0), p, &mut warnings)
-    } else {
-        Vec::new()
-    };
+    let key_pos =
+        if p.b("keys") { features::place_keys(rect0, &Section::of(model, 0.0), p, &mut warnings) } else { Vec::new() };
     let keys: Vec<Manifold> = key_pos.iter().map(|k| features::key_solid(*k, 0.0, p, true)).collect();
     let key_union = union_all(keys.clone());
     let mut board = board_blank.difference_with_engine(&cutter, BooleanEngine::Auto);
@@ -189,8 +188,10 @@ fn generate(input: &MoldInput) -> Result<MoldOutput> {
     let plate = outer.inset(-(clear + lip_w));
     let base = union_all(vec![
         cuboid(plate.min.extend(cz0 - floor), plate.max.extend(cz0)),
-        cuboid(plate.min.extend(cz0 - 0.01), plate.max.extend(cz0 + lip_h))
-            .difference(&cuboid(outer.inset(-clear).min.extend(cz0 - 1.0), outer.inset(-clear).max.extend(cz0 + lip_h + 1.0))),
+        cuboid(plate.min.extend(cz0 - 0.01), plate.max.extend(cz0 + lip_h)).difference(&cuboid(
+            outer.inset(-clear).min.extend(cz0 - 1.0),
+            outer.inset(-clear).max.extend(cz0 + lip_h + 1.0),
+        )),
     ]);
 
     // ---- Spout and vents -------------------------------------------------
@@ -241,11 +242,7 @@ fn generate(input: &MoldInput) -> Result<MoldOutput> {
 
     // ---- Silicone ----------------------------------------------------------
     let cavity = cav_a.union(&cav_b);
-    let channels = if rods_u.is_empty() {
-        Manifold::empty()
-    } else {
-        rods_u.intersection(&cavity).difference(model)
-    };
+    let channels = if rods_u.is_empty() { Manifold::empty() } else { rods_u.intersection(&cavity).difference(model) };
     let total = subtract_all(cavity.clone(), vec![model.clone(), rods_u.clone()]);
     let mut sil_a = solid::trim_z(&total, 0.0, true);
     if !key_union.is_empty() {
@@ -257,7 +254,9 @@ fn generate(input: &MoldInput) -> Result<MoldOutput> {
     }
     input.check_cancel()?;
 
-    for (name, s) in [("box half A", &ring_a), ("box half B", &ring_b), ("parting board", &board), ("base plate", &base)] {
+    for (name, s) in
+        [("box half A", &ring_a), ("box half B", &ring_b), ("parting board", &board), ("base plate", &base)]
+    {
         if !solid::ok(s) {
             bail!("Could not build the {name} ({:?}). Try a different plane or margin.", s.status());
         }
@@ -325,14 +324,9 @@ fn generate(input: &MoldInput) -> Result<MoldOutput> {
             );
         }
     }
-    parts.push(
-        Part::from_solid("Silicone A (pour 1)", PartRole::Silicone(1), &sil_a)
-            .exploded(DVec3::Z * ex * 0.5),
-    );
-    parts.push(
-        Part::from_solid("Silicone B (pour 2)", PartRole::Silicone(2), &sil_b)
-            .exploded(DVec3::NEG_Z * ex * 0.5),
-    );
+    parts.push(Part::from_solid("Silicone A (pour 1)", PartRole::Silicone(1), &sil_a).exploded(DVec3::Z * ex * 0.5));
+    parts
+        .push(Part::from_solid("Silicone B (pour 2)", PartRole::Silicone(2), &sil_b).exploded(DVec3::NEG_Z * ex * 0.5));
 
     let (density, price) = features::density_and_price(p);
     let report = VolumeReport::new(
@@ -346,12 +340,7 @@ fn generate(input: &MoldInput) -> Result<MoldOutput> {
     for k in &key_pos {
         markers.push(("Key".to_string(), k.extend(0.0)));
     }
-    Ok(MoldOutput {
-        parts,
-        report,
-        warnings,
-        markers,
-    })
+    Ok(MoldOutput { parts, report, warnings, markers })
 }
 
 fn side_normal(s: features::Side) -> DVec2 {
@@ -399,7 +388,9 @@ fn undercut_safe_cutter(model: &Manifold, below: &Manifold) -> std::result::Resu
     if soup.triangles.is_empty() {
         return Ok(model.clone());
     }
-    let fail = || "Could not shape an undercut-safe parting board; it follows the model exactly instead, so check that it can be removed.".to_string();
+    let fail = || {
+        "Could not shape an undercut-safe parting board; it follows the model exactly instead, so check that it can be removed.".to_string()
+    };
     let prisms = Manifold::from_mesh_gl64_robust(&soup.to_mesh_gl64());
     if prisms.status() != ManifoldError::NoError || prisms.is_empty() {
         return Err(fail());

@@ -85,18 +85,16 @@ fn orient(part: &Part, printer: &PrinterProfile) -> Item {
         mesh = m2.translated(-b.min);
     }
     let size = mesh.bounds().size();
-    Item {
-        name: part.name.clone(),
-        mesh,
-        size,
-        fits: fits_xy(size) && size.z <= printer.max_z,
-    }
+    Item { name: part.name.clone(), mesh, size, fits: fits_xy(size) && size.z <= printer.max_z }
 }
+
+/// Per item: position and whether it is rotated, or `None` if it did not fit.
+type Packing = Vec<Option<(DVec2, bool)>>;
 
 /// MaxRects packer (best short side fit, 90° rotation allowed) over a
 /// `w` x `d` area. Returns, per input size, its position and whether it
 /// was rotated, or `None` if it did not fit.
-fn maxrects_pack(sizes: &[DVec2], w: f64, d: f64) -> Vec<Option<(DVec2, bool)>> {
+fn maxrects_pack(sizes: &[DVec2], w: f64, d: f64) -> Packing {
     #[derive(Clone, Copy)]
     struct R {
         x: f64,
@@ -176,7 +174,7 @@ pub fn arrange(parts: &[&Part], printer: &PrinterProfile) -> Layout {
         });
         orders.push(o);
     }
-    let mut best: Option<(f64, Vec<usize>, Vec<Option<(DVec2, bool)>>)> = None;
+    let mut best: Option<(f64, Vec<usize>, Packing)> = None;
     for order in orders {
         let sizes: Vec<DVec2> = order
             .iter()
@@ -211,11 +209,8 @@ pub fn arrange(parts: &[&Part], printer: &PrinterProfile) -> Layout {
             hi = hi.max(*p + sizes[k]);
         }
     }
-    let shift = if lo.x.is_finite() {
-        DVec2::new(printer.bed_x, printer.bed_y) * 0.5 - (lo + hi) * 0.5
-    } else {
-        DVec2::ZERO
-    };
+    let shift =
+        if lo.x.is_finite() { DVec2::new(printer.bed_x, printer.bed_y) * 0.5 - (lo + hi) * 0.5 } else { DVec2::ZERO };
 
     let mut layout = Layout::default();
     let mut placed: Vec<Option<PlacedPart>> = (0..items.len()).map(|_| None).collect();
@@ -237,7 +232,14 @@ pub fn arrange(parts: &[&Part], printer: &PrinterProfile) -> Layout {
         if !item.fits {
             layout.warnings.push(format!(
                 "{} ({:.0} x {:.0} x {:.0} mm) does not fit the {} build volume ({:.0} x {:.0} x {:.0} mm).",
-                item.name, item.size.x, item.size.y, item.size.z, printer.name, printer.bed_x, printer.bed_y, printer.max_z
+                item.name,
+                item.size.x,
+                item.size.y,
+                item.size.z,
+                printer.name,
+                printer.bed_x,
+                printer.bed_y,
+                printer.max_z
             ));
         } else if !on_plate {
             layout.warnings.push(format!(
@@ -263,11 +265,7 @@ pub fn export_3mf(layout: &Layout, title: &str) -> Result<Vec<u8>> {
     let objects: Vec<ExportObject> = layout
         .parts
         .iter()
-        .map(|p| ExportObject {
-            name: &p.name,
-            mesh: &p.mesh,
-            translation: p.translation,
-        })
+        .map(|p| ExportObject { name: &p.name, mesh: &p.mesh, translation: p.translation })
         .collect();
     write_3mf(&objects, title)
 }
@@ -294,7 +292,8 @@ mod tests {
     #[test]
     fn packs_without_overlap_inside_plate() {
         let printer = PrinterProfile { name: "t".into(), bed_x: 220.0, bed_y: 220.0, max_z: 250.0 };
-        let parts: Vec<Part> = (0..7).map(|i| part(&format!("p{i}"), DVec3::new(60.0 + i as f64 * 3.0, 40.0, 20.0))).collect();
+        let parts: Vec<Part> =
+            (0..7).map(|i| part(&format!("p{i}"), DVec3::new(60.0 + i as f64 * 3.0, 40.0, 20.0))).collect();
         let refs: Vec<&Part> = parts.iter().collect();
         let l = arrange(&refs, &printer);
         assert!(l.warnings.is_empty(), "{:?}", l.warnings);

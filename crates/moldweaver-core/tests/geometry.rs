@@ -250,7 +250,8 @@ fn tray_detachable_base_with_bolts() {
     let p = params(&[("detachable", ParamValue::Bool(true)), ("vents", ParamValue::Bool(true))]);
     let g = gen(&cube, plane, "open_tray", &p);
     assert_all_watertight(&g);
-    let names: Vec<&str> = g.output.parts.iter().filter(|p| p.role == PartRole::Printed).map(|p| p.name.as_str()).collect();
+    let names: Vec<&str> =
+        g.output.parts.iter().filter(|p| p.role == PartRole::Printed).map(|p| p.name.as_str()).collect();
     assert_eq!(names, vec!["Tray walls", "Tray base"]);
     let walls = solid_of(&g, "Tray walls");
     let base = solid_of(&g, "Tray base");
@@ -262,7 +263,8 @@ fn plane_that_misses_the_model_is_an_error() {
     let cube = cuboid(DVec3::ZERO, DVec3::splat(20.0));
     let m = molds::find("two_part_box").unwrap();
     let plane = PartingPlane { offset_mm: 30.0, ..Default::default() };
-    let err = pipeline::generate(&cube, &plane, m.as_ref(), &ParamValues::default(), &AtomicBool::new(false)).unwrap_err();
+    let err =
+        pipeline::generate(&cube, &plane, m.as_ref(), &ParamValues::default(), &AtomicBool::new(false)).unwrap_err();
     assert!(format!("{err:#}").contains("parting plane"));
 }
 
@@ -270,7 +272,13 @@ fn plane_that_misses_the_model_is_an_error() {
 fn cancelled_job_stops() {
     let cube = cuboid(DVec3::ZERO, DVec3::splat(20.0));
     let m = molds::find("two_part_box").unwrap();
-    let r = pipeline::generate(&cube, &PartingPlane::default(), m.as_ref(), &ParamValues::default(), &AtomicBool::new(true));
+    let r = pipeline::generate(
+        &cube,
+        &PartingPlane::default(),
+        m.as_ref(),
+        &ParamValues::default(),
+        &AtomicBool::new(true),
+    );
     assert!(r.unwrap_err().downcast_ref::<molds::Cancelled>().is_some());
 }
 

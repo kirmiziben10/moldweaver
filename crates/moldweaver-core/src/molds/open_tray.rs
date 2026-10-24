@@ -54,11 +54,7 @@ impl MoldType for OpenTray {
                 .when("detachable", ParamValue::Bool(true)),
         ];
         v.extend(features::vent_only_specs());
-        v.extend(
-            features::clamp_specs()
-                .into_iter()
-                .map(|s| s.when("detachable", ParamValue::Bool(true))),
-        );
+        v.extend(features::clamp_specs().into_iter().map(|s| s.when("detachable", ParamValue::Bool(true))));
         v.extend(features::silicone_specs());
         // Vents default off: the open back usually lets air out on its own.
         for s in &mut v {
@@ -192,11 +188,7 @@ fn generate(input: &MoldInput) -> Result<MoldOutput> {
     input.check_cancel()?;
 
     let silicone = subtract_all(cavity.clone(), vec![model.clone(), pins.clone()]);
-    let channels = if pins.is_empty() {
-        0.0
-    } else {
-        pins.intersection(&cavity).difference(&model).volume()
-    };
+    let channels = if pins.is_empty() { 0.0 } else { pins.intersection(&cavity).difference(&model).volume() };
     for part in &parts {
         if part.mesh.is_empty() {
             bail!("Could not build the {}. Try a different plane or margin.", part.name);
@@ -212,10 +204,5 @@ fn generate(input: &MoldInput) -> Result<MoldOutput> {
         density,
         price,
     );
-    Ok(MoldOutput {
-        parts,
-        report,
-        warnings,
-        markers,
-    })
+    Ok(MoldOutput { parts, report, warnings, markers })
 }

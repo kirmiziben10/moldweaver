@@ -115,16 +115,10 @@ fn emit_object(
         bail!("3MF component nesting is too deep (cycle?)");
     }
     let file = load_model_file(zip, path, files)?;
-    let obj = file
-        .objects
-        .get(id)
-        .ok_or_else(|| anyhow!("3MF build references unknown object {id}"))?;
+    let obj = file.objects.get(id).ok_or_else(|| anyhow!("3MF build references unknown object {id}"))?;
     let m = obj.mesh.transformed(&transform);
-    let comps: Vec<(String, Option<String>, DMat4)> = obj
-        .components
-        .iter()
-        .map(|c| (c.object_id.clone(), c.path.clone(), c.transform))
-        .collect();
+    let comps: Vec<(String, Option<String>, DMat4)> =
+        obj.components.iter().map(|c| (c.object_id.clone(), c.path.clone(), c.transform)).collect();
     out.append(&m);
     for (cid, cpath, ct) in comps {
         let p = cpath.unwrap_or_else(|| path.to_string());
@@ -136,7 +130,8 @@ fn emit_object(
 
 fn attr(e: &BytesStart, name: &[u8]) -> Option<String> {
     e.attributes().flatten().find_map(|a| {
-        (a.key.local_name().as_ref() == name).then(|| a.normalized_value(quick_xml::XmlVersion::Implicit1_0).map(|v| v.into_owned()).ok())?
+        (a.key.local_name().as_ref() == name)
+            .then(|| a.normalized_value(quick_xml::XmlVersion::Implicit1_0).map(|v| v.into_owned()).ok())?
     })
 }
 
@@ -170,10 +165,7 @@ fn parse_transform(s: Option<String>) -> Result<DMat4> {
 
 fn parse_model_xml(xml: &str) -> Result<ModelFile> {
     let mut reader = Reader::from_str(xml);
-    let mut file = ModelFile {
-        unit_scale: 1.0,
-        ..Default::default()
-    };
+    let mut file = ModelFile { unit_scale: 1.0, ..Default::default() };
     let mut current: Option<(String, Object)> = None;
     let mut in_build = false;
     loop {
@@ -218,9 +210,7 @@ fn parse_model_xml(xml: &str) -> Result<ModelFile> {
             }
             b"vertex" => {
                 if let Some((_, obj)) = &mut current {
-                    obj.mesh
-                        .positions
-                        .push(DVec3::new(num(e, b"x")?, num(e, b"y")?, num(e, b"z")?));
+                    obj.mesh.positions.push(DVec3::new(num(e, b"x")?, num(e, b"y")?, num(e, b"z")?));
                 }
             }
             b"triangle" => {
@@ -286,11 +276,7 @@ pub fn write_3mf(objects: &[ExportObject], title: &str) -> Result<Vec<u8>> {
             xml_escape(obj.name)
         );
         for p in &obj.mesh.positions {
-            let _ = writeln!(
-                model,
-                "     <vertex x=\"{}\" y=\"{}\" z=\"{}\"/>",
-                p.x as f32, p.y as f32, p.z as f32
-            );
+            let _ = writeln!(model, "     <vertex x=\"{}\" y=\"{}\" z=\"{}\"/>", p.x as f32, p.y as f32, p.z as f32);
         }
         model.push_str("    </vertices>\n    <triangles>\n");
         for t in &obj.mesh.triangles {
@@ -334,10 +320,7 @@ pub fn write_3mf(objects: &[ExportObject], title: &str) -> Result<Vec<u8>> {
 }
 
 fn xml_escape(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
+    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;")
 }
 
 /// Light-weight structural check of a 3MF package written by anyone: the
@@ -347,9 +330,7 @@ pub fn validate_3mf(bytes: &[u8]) -> Result<Vec<ValidatedObject>> {
     let mut zip = zip::ZipArchive::new(Cursor::new(bytes)).context("not a zip archive")?;
     for required in ["[Content_Types].xml", "_rels/.rels"] {
         let mut s = String::new();
-        zip.by_name(required)
-            .with_context(|| format!("missing {required}"))?
-            .read_to_string(&mut s)?;
+        zip.by_name(required).with_context(|| format!("missing {required}"))?.read_to_string(&mut s)?;
         check_well_formed(&s).with_context(|| format!("{required} is not well-formed XML"))?;
     }
     let root = root_model_path(&mut zip).ok_or_else(|| anyhow!("no 3D model relationship"))?;
@@ -364,11 +345,7 @@ pub fn validate_3mf(bytes: &[u8]) -> Result<Vec<ValidatedObject>> {
             .get(&item.object_id)
             .ok_or_else(|| anyhow!("build item references missing object {}", item.object_id))?;
         let mesh = obj.mesh.transformed(&item.transform);
-        out.push(ValidatedObject {
-            name: object_name(&xml, &item.object_id),
-            bounds: mesh.bounds(),
-            mesh,
-        });
+        out.push(ValidatedObject { name: object_name(&xml, &item.object_id), bounds: mesh.bounds(), mesh });
     }
     Ok(out)
 }

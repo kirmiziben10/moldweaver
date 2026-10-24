@@ -37,10 +37,7 @@ struct BatchReport {
 
 /// Location of the user's printer profiles.
 pub fn user_printers_path() -> PathBuf {
-    dirs::config_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("moldweaver")
-        .join("printers.json")
+    dirs::config_dir().unwrap_or_else(|| PathBuf::from(".")).join("moldweaver").join("printers.json")
 }
 
 pub fn find_printer(name: &str) -> Result<PrinterProfile> {
@@ -49,15 +46,12 @@ pub fn find_printer(name: &str) -> Result<PrinterProfile> {
     if name.is_empty() {
         return Ok(all[0].clone());
     }
-    all.iter()
-        .find(|p| p.name.eq_ignore_ascii_case(name))
-        .cloned()
-        .ok_or_else(|| {
-            anyhow!(
-                "unknown printer '{name}'. Available: {}",
-                all.iter().map(|p| p.name.as_str()).collect::<Vec<_>>().join(", ")
-            )
-        })
+    all.iter().find(|p| p.name.eq_ignore_ascii_case(name)).cloned().ok_or_else(|| {
+        anyhow!(
+            "unknown printer '{name}'. Available: {}",
+            all.iter().map(|p| p.name.as_str()).collect::<Vec<_>>().join(", ")
+        )
+    })
 }
 
 /// Parse `key=value` into a parameter value matching the mold type's spec.
@@ -78,10 +72,7 @@ fn parse_set(mold: &dyn molds::MoldType, kv: &str) -> Result<(String, ParamValue
         }),
         ParamKind::Choice(opts) => {
             if !opts.iter().any(|(id, _)| *id == v) {
-                bail!(
-                    "{k} must be one of {}",
-                    opts.iter().map(|(id, _)| *id).collect::<Vec<_>>().join(", ")
-                );
+                bail!("{k} must be one of {}", opts.iter().map(|(id, _)| *id).collect::<Vec<_>>().join(", "));
             }
             ParamValue::Choice(v.to_string())
         }
@@ -119,7 +110,11 @@ pub fn run(args: &Args) -> Result<()> {
         }
         (Some(path), _) | (None, Some(path)) => {
             // A model file instead of a project: use defaults.
-            let p = Project::new(ModelSource { path: Some(std::fs::canonicalize(path)?), embedded: None, repair: args.repair });
+            let p = Project::new(ModelSource {
+                path: Some(std::fs::canonicalize(path)?),
+                embedded: None,
+                repair: args.repair,
+            });
             (p, PathBuf::new(), path.file_stem().unwrap_or_default().to_string_lossy().to_string())
         }
         (None, None) => bail!("--batch needs a project file or a model"),
@@ -214,9 +209,7 @@ pub fn run(args: &Args) -> Result<()> {
 }
 
 fn sanitize(name: &str) -> String {
-    name.chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == '-' { c } else { '_' })
-        .collect()
+    name.chars().map(|c| if c.is_ascii_alphanumeric() || c == '-' { c } else { '_' }).collect()
 }
 
 fn print_summary(r: &BatchReport, output: &Path) {

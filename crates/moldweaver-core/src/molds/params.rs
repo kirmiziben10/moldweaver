@@ -22,8 +22,16 @@ pub enum ParamValue {
 /// What kind of control a parameter gets and its valid range.
 #[derive(Clone, Debug, PartialEq)]
 pub enum ParamKind {
-    Float { min: f64, max: f64, step: f64, unit: &'static str },
-    Int { min: i64, max: i64 },
+    Float {
+        min: f64,
+        max: f64,
+        step: f64,
+        unit: &'static str,
+    },
+    Int {
+        min: i64,
+        max: i64,
+    },
     Bool,
     /// (id stored in files, label shown in the UI)
     Choice(&'static [(&'static str, &'static str)]),

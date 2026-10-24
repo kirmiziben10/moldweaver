@@ -57,10 +57,7 @@ pub fn vents_spec() -> ParamSpec {
 
 /// Vent specs only (for mold types without a spout).
 pub fn vent_only_specs() -> Vec<ParamSpec> {
-    spout_specs()
-        .into_iter()
-        .filter(|s| s.key.starts_with("vent"))
-        .collect()
+    spout_specs().into_iter().filter(|s| s.key.starts_with("vent")).collect()
 }
 
 pub fn key_specs() -> Vec<ParamSpec> {
@@ -136,11 +133,7 @@ pub fn plan_channels(model: &TriMesh, params: &ParamValues, up: bool, min_z: f64
     let mut plan = ChannelPlan::default();
     let s = if up { 1.0 } else { -1.0 };
     // Work on a mirrored copy so "high" always means +Z.
-    let mesh = if up {
-        model.clone()
-    } else {
-        model.transformed(&glam::DMat4::from_scale(DVec3::new(1.0, 1.0, -1.0)))
-    };
+    let mesh = if up { model.clone() } else { model.transformed(&glam::DMat4::from_scale(DVec3::new(1.0, 1.0, -1.0))) };
     let grid = VerticalRayGrid::new(&mesh);
     let b = mesh.bounds();
     // Height in the original (unmirrored) frame.
@@ -164,7 +157,8 @@ pub fn plan_channels(model: &TriMesh, params: &ParamValues, up: bool, min_z: f64
         };
         if let Some(p) = spot {
             if orig_z(&p) <= min_z {
-                plan.warnings.push("The pour spout would start below the parting plane; move the plane or the spout.".into());
+                plan.warnings
+                    .push("The pour spout would start below the parting plane; move the plane or the spout.".into());
             } else {
                 plan.spout = Some(p);
             }
@@ -183,9 +177,7 @@ pub fn plan_channels(model: &TriMesh, params: &ParamValues, up: bool, min_z: f64
             if chosen.len() as i64 >= params.i("vent_count") {
                 break;
             }
-            let near_spout = plan
-                .spout
-                .is_some_and(|sp| (sp.truncate() - p.truncate()).length() < spacing + spout_r);
+            let near_spout = plan.spout.is_some_and(|sp| (sp.truncate() - p.truncate()).length() < spacing + spout_r);
             if near_spout || chosen.iter().any(|c| (c.truncate() - p.truncate()).length() < spacing) {
                 continue;
             }
@@ -218,12 +210,7 @@ fn auto_spout(mesh: &TriMesh, grid: &VerticalRayGrid) -> DVec3 {
     let b = mesh.bounds();
     let tol = (b.size().z * 0.01).max(0.2);
     let top: Vec<DVec3> = mesh.positions.iter().copied().filter(|p| p.z >= b.max.z - tol).collect();
-    let highest = mesh
-        .positions
-        .iter()
-        .copied()
-        .max_by(|a, b| a.z.total_cmp(&b.z))
-        .unwrap_or(DVec3::ZERO);
+    let highest = mesh.positions.iter().copied().max_by(|a, b| a.z.total_cmp(&b.z)).unwrap_or(DVec3::ZERO);
     if top.len() > 1 {
         let c = top.iter().copied().sum::<DVec3>() / top.len() as f64;
         if let Some(z) = grid.top_z(c.x, c.y) {
@@ -638,7 +625,12 @@ mod tests {
     fn keys_avoid_model_and_each_other() {
         let cavity = Rect::new(DVec2::splat(-30.0), DVec2::splat(30.0));
         let section = Section {
-            loops: vec![vec![DVec2::new(-20.0, -20.0), DVec2::new(20.0, -20.0), DVec2::new(20.0, 20.0), DVec2::new(-20.0, 20.0)]],
+            loops: vec![vec![
+                DVec2::new(-20.0, -20.0),
+                DVec2::new(20.0, -20.0),
+                DVec2::new(20.0, 20.0),
+                DVec2::new(-20.0, 20.0),
+            ]],
         };
         for placement in ["corners", "even"] {
             let mut w = Vec::new();
@@ -655,7 +647,12 @@ mod tests {
     fn keys_warn_when_crowded() {
         let cavity = Rect::new(DVec2::splat(-12.0), DVec2::splat(12.0));
         let section = Section {
-            loops: vec![vec![DVec2::new(-10.0, -10.0), DVec2::new(10.0, -10.0), DVec2::new(10.0, 10.0), DVec2::new(-10.0, 10.0)]],
+            loops: vec![vec![
+                DVec2::new(-10.0, -10.0),
+                DVec2::new(10.0, -10.0),
+                DVec2::new(10.0, 10.0),
+                DVec2::new(-10.0, 10.0),
+            ]],
         };
         let mut w = Vec::new();
         let keys = place_keys(cavity, &section, &key_params(4, "corners"), &mut w);

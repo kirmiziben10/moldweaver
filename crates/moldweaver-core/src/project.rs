@@ -85,11 +85,7 @@ impl EmbeddedMesh {
             }
         }
         let b64 = base64::engine::general_purpose::STANDARD;
-        EmbeddedMesh {
-            encoding: Self::ENCODING.into(),
-            positions: b64.encode(pos),
-            triangles: b64.encode(tri),
-        }
+        EmbeddedMesh { encoding: Self::ENCODING.into(), positions: b64.encode(pos), triangles: b64.encode(tri) }
     }
 
     pub fn decode(&self) -> Result<TriMesh> {
@@ -103,7 +99,8 @@ impl EmbeddedMesh {
             bail!("embedded mesh has a truncated array");
         }
         let f = |c: &[u8]| f32::from_le_bytes([c[0], c[1], c[2], c[3]]) as f64;
-        let positions: Vec<DVec3> = pos.chunks_exact(12).map(|c| DVec3::new(f(&c[0..4]), f(&c[4..8]), f(&c[8..12]))).collect();
+        let positions: Vec<DVec3> =
+            pos.chunks_exact(12).map(|c| DVec3::new(f(&c[0..4]), f(&c[4..8]), f(&c[8..12]))).collect();
         let u = |c: &[u8]| u32::from_le_bytes([c[0], c[1], c[2], c[3]]);
         let triangles: Vec<[u32; 3]> = tri.chunks_exact(12).map(|c| [u(&c[0..4]), u(&c[4..8]), u(&c[8..12])]).collect();
         let n = positions.len() as u32;
@@ -188,7 +185,11 @@ mod tests {
     #[test]
     fn json_roundtrip_with_embedded_mesh() {
         let mesh = uv_sphere(DVec3::ZERO, 5.0, 12, 6);
-        let mut p = Project::new(ModelSource { path: Some("x.stl".into()), embedded: Some(EmbeddedMesh::encode(&mesh)), repair: false });
+        let mut p = Project::new(ModelSource {
+            path: Some("x.stl".into()),
+            embedded: Some(EmbeddedMesh::encode(&mesh)),
+            repair: false,
+        });
         p.plane.offset_mm = 1.5;
         p.params.set("margin", ParamValue::Float(12.0));
         let back = Project::from_json(&p.to_json()).unwrap();

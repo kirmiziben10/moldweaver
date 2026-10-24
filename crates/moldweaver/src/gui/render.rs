@@ -4,6 +4,7 @@
 use std::sync::Arc;
 
 use bytemuck::{Pod, Zeroable};
+use eframe::egui;
 use eframe::egui_wgpu;
 use eframe::wgpu;
 use glam::{Mat4, Vec3, Vec4};
@@ -124,16 +125,8 @@ impl Renderer {
         let queue = rs.queue.clone();
         let info = rs.adapter.get_info();
         let adapter_info = format!("{} ({:?})", info.name, info.backend);
-        let samples = if rs
-            .adapter
-            .get_texture_format_features(COLOR_FORMAT)
-            .flags
-            .sample_count_supported(4)
-            && rs
-                .adapter
-                .get_texture_format_features(DEPTH_FORMAT)
-                .flags
-                .sample_count_supported(4)
+        let samples = if rs.adapter.get_texture_format_features(COLOR_FORMAT).flags.sample_count_supported(4)
+            && rs.adapter.get_texture_format_features(DEPTH_FORMAT).flags.sample_count_supported(4)
         {
             4
         } else {
@@ -173,11 +166,11 @@ impl Renderer {
                     module: &shader,
                     entry_point: Some("vs_main"),
                     compilation_options: Default::default(),
-                    buffers: &[wgpu::VertexBufferLayout {
+                    buffers: &[Some(wgpu::VertexBufferLayout {
                         array_stride: std::mem::size_of::<Vertex>() as u64,
                         step_mode: wgpu::VertexStepMode::Vertex,
                         attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3, 2 => Float32x4],
-                    }],
+                    })],
                 },
                 fragment: Some(wgpu::FragmentState {
                     module: &shader,
@@ -185,19 +178,11 @@ impl Renderer {
                     compilation_options: Default::default(),
                     targets: &[Some(wgpu::ColorTargetState {
                         format: COLOR_FORMAT,
-                        blend: Some(if blend {
-                            wgpu::BlendState::ALPHA_BLENDING
-                        } else {
-                            wgpu::BlendState::REPLACE
-                        }),
+                        blend: Some(if blend { wgpu::BlendState::ALPHA_BLENDING } else { wgpu::BlendState::REPLACE }),
                         write_mask: wgpu::ColorWrites::ALL,
                     })],
                 }),
-                primitive: wgpu::PrimitiveState {
-                    topology,
-                    cull_mode: None,
-                    ..Default::default()
-                },
+                primitive: wgpu::PrimitiveState { topology, cull_mode: None, ..Default::default() },
                 depth_stencil: Some(wgpu::DepthStencilState {
                     format: DEPTH_FORMAT,
                     depth_write_enabled: Some(depth_write),
@@ -205,10 +190,7 @@ impl Renderer {
                     stencil: Default::default(),
                     bias: Default::default(),
                 }),
-                multisample: wgpu::MultisampleState {
-                    count: samples,
-                    ..Default::default()
-                },
+                multisample: wgpu::MultisampleState { count: samples, ..Default::default() },
                 multiview_mask: None,
                 cache: None,
             })
@@ -225,10 +207,7 @@ impl Renderer {
         let globals_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("globals"),
             layout: &globals_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: globals_buf.as_entire_binding(),
-            }],
+            entries: &[wgpu::BindGroupEntry { binding: 0, resource: globals_buf.as_entire_binding() }],
         });
         Renderer {
             device,
@@ -250,21 +229,14 @@ impl Renderer {
 
     pub fn upload(&self, vertices: &[Vertex], lines: bool) -> Arc<GpuMesh> {
         use wgpu::util::DeviceExt;
-        let data: &[u8] = if vertices.is_empty() {
-            &[0u8; std::mem::size_of::<Vertex>()]
-        } else {
-            bytemuck::cast_slice(vertices)
-        };
+        let data: &[u8] =
+            if vertices.is_empty() { &[0u8; std::mem::size_of::<Vertex>()] } else { bytemuck::cast_slice(vertices) };
         let buf = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("mesh"),
             contents: data,
             usage: wgpu::BufferUsages::VERTEX,
         });
-        Arc::new(GpuMesh {
-            vertices: buf,
-            count: vertices.len() as u32,
-            lines,
-        })
+        Arc::new(GpuMesh { vertices: buf, count: vertices.len() as u32, lines })
     }
 
     fn ensure_target(&mut self, size: [u32; 2]) {
@@ -275,11 +247,7 @@ impl Renderer {
             self.device
                 .create_texture(&wgpu::TextureDescriptor {
                     label: Some(label),
-                    size: wgpu::Extent3d {
-                        width: size[0],
-                        height: size[1],
-                        depth_or_array_layers: 1,
-                    },
+                    size: wgpu::Extent3d { width: size[0], height: size[1], depth_or_array_layers: 1 },
                     mip_level_count: 1,
                     sample_count: samples,
                     dimension: wgpu::TextureDimension::D2,
@@ -303,22 +271,14 @@ impl Renderer {
             Some(id) => r.update_egui_texture_from_wgpu_texture(&self.device, &resolve, wgpu::FilterMode::Linear, id),
             None => self.texture_id = Some(r.register_native_texture(&self.device, &resolve, wgpu::FilterMode::Linear)),
         }
-        self.target = Some(Target {
-            size,
-            msaa,
-            resolve,
-            depth,
-        });
+        self.target = Some(Target { size, msaa, resolve, depth });
     }
 
     /// Render the scene into the viewport texture.
     pub fn render(&mut self, size: [u32; 2], view_proj: Mat4, eye: Vec3, background: [f64; 3], items: &[DrawItem]) {
         let size = [size[0].clamp(1, 8192), size[1].clamp(1, 8192)];
         self.ensure_target(size);
-        let globals = Globals {
-            view_proj: view_proj.to_cols_array_2d(),
-            eye: eye.extend(1.0).to_array(),
-        };
+        let globals = Globals { view_proj: view_proj.to_cols_array_2d(), eye: eye.extend(1.0).to_array() };
         self.queue.write_buffer(&self.globals_buf, 0, bytemuck::bytes_of(&globals));
         while self.object_pool.len() < items.len() {
             let buf = self.device.create_buffer(&wgpu::BufferDescriptor {
@@ -330,10 +290,7 @@ impl Renderer {
             let bg = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some("object"),
                 layout: &self.object_layout,
-                entries: &[wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: buf.as_entire_binding(),
-                }],
+                entries: &[wgpu::BindGroupEntry { binding: 0, resource: buf.as_entire_binding() }],
             });
             self.object_pool.push((buf, bg));
         }
@@ -370,10 +327,7 @@ impl Renderer {
                 })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: &target.depth,
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(1.0),
-                        store: wgpu::StoreOp::Discard,
-                    }),
+                    depth_ops: Some(wgpu::Operations { load: wgpu::LoadOp::Clear(1.0), store: wgpu::StoreOp::Discard }),
                     stencil_ops: None,
                 }),
                 timestamp_writes: None,

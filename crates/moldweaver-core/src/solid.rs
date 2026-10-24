@@ -41,12 +41,7 @@ pub fn sphere(c: DVec3, r: f64) -> Manifold {
 
 /// Rectangle `[min, max]` in XY at height `z`, as 4 points.
 fn rect_pts(min: DVec2, max: DVec2, z: f64) -> [Vec3; 4] {
-    [
-        Vec3::new(min.x, min.y, z),
-        Vec3::new(max.x, min.y, z),
-        Vec3::new(max.x, max.y, z),
-        Vec3::new(min.x, max.y, z),
-    ]
+    [Vec3::new(min.x, min.y, z), Vec3::new(max.x, min.y, z), Vec3::new(max.x, max.y, z), Vec3::new(min.x, max.y, z)]
 }
 
 /// Frustum between two axis-aligned rectangles at `z0` and `z1`.

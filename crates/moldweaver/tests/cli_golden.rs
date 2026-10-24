@@ -166,7 +166,8 @@ fn sphere_two_part_on_ender_with_clamps() {
     assert!(r["volumes"]["cost"].as_f64().unwrap() > 0.0);
     assert_eq!(r["volumes"]["pours"].as_array().unwrap().len(), 2);
     // Equator split: the two pours are nearly equal.
-    let p: Vec<f64> = r["volumes"]["pours"].as_array().unwrap().iter().map(|p| p["silicone_ml"].as_f64().unwrap()).collect();
+    let p: Vec<f64> =
+        r["volumes"]["pours"].as_array().unwrap().iter().map(|p| p["silicone_ml"].as_f64().unwrap()).collect();
     assert!((p[0] - p[1]).abs() / p[0] < 0.05, "{p:?}");
 }
 

@@ -50,14 +50,7 @@ impl<'a> VerticalRayGrid<'a> {
                 }
             }
         }
-        VerticalRayGrid {
-            mesh,
-            origin,
-            cell,
-            nx,
-            ny,
-            cells,
-        }
+        VerticalRayGrid { mesh, origin, cell, nx, ny, cells }
     }
 
     fn idx(v: f64, o: f64, cell: f64, n: usize) -> usize {
@@ -415,12 +408,7 @@ fn score_direction(model: &TriMesh, dir: DVec3, usage: PlaneUsage, samples: &[us
             let zmin = b.min.z;
             let height = b.size().z.max(1e-9);
             let tol = (height * 0.005).max(0.05);
-            let flat: f64 = rows
-                .iter()
-                .filter(|r| r.4 < -0.999 && r.0 - zmin < tol)
-                .map(|r| r.1)
-                .sum::<f64>()
-                / total;
+            let flat: f64 = rows.iter().filter(|r| r.4 < -0.999 && r.0 - zmin < tol).map(|r| r.1).sum::<f64>() / total;
             let mut best = (f64::INFINITY, zmin, 1.0);
             for step in 0..=12 {
                 let frac = step as f64 / 24.0; // up to half the height
@@ -502,10 +490,8 @@ pub fn suggest_plane(model: &TriMesh, usage: PlaneUsage) -> Suggestion {
             PlaneUsage::Split => dirs.push(n),
         }
     }
-    let scored: Vec<(DVec3, (f64, f64, f64))> = dirs
-        .par_iter()
-        .map(|&d| (d, score_direction(model, d, usage, &samples)))
-        .collect();
+    let scored: Vec<(DVec3, (f64, f64, f64))> =
+        dirs.par_iter().map(|&d| (d, score_direction(model, d, usage, &samples))).collect();
     let objective = |s: &(f64, f64, f64), d: DVec3| {
         let flat_bonus = if usage == PlaneUsage::Base { 0.5 * s.2 } else { 0.0 };
         // A small preference for the model's own up axis breaks ties.
@@ -519,11 +505,7 @@ pub fn suggest_plane(model: &TriMesh, usage: PlaneUsage) -> Suggestion {
     let mut plane = PartingPlane::from_normal(dir, 0.0, best.0);
     let frame = MoldFrame::new(model, &PartingPlane { offset_mm: 0.0, ..plane });
     plane.spin_deg = best_spin(&frame.to_mold(model));
-    Suggestion {
-        plane,
-        undercut_fraction: best.1,
-        flat_base_fraction: best.2,
-    }
+    Suggestion { plane, undercut_fraction: best.1, flat_base_fraction: best.2 }
 }
 
 #[cfg(test)]

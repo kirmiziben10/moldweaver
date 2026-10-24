@@ -31,10 +31,7 @@ fn read_binary(bytes: &[u8]) -> Result<TriMesh> {
     if bytes.len() < 84 + n * 50 {
         bail!("binary STL is truncated: header says {n} triangles");
     }
-    let mut mesh = TriMesh {
-        positions: Vec::with_capacity(n * 3),
-        triangles: Vec::with_capacity(n),
-    };
+    let mut mesh = TriMesh { positions: Vec::with_capacity(n * 3), triangles: Vec::with_capacity(n) };
     let f = |o: usize| f32::from_le_bytes([bytes[o], bytes[o + 1], bytes[o + 2], bytes[o + 3]]) as f64;
     for i in 0..n {
         let o = 84 + i * 50 + 12;

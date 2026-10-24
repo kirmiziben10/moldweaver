@@ -39,17 +39,9 @@ pub fn generate(
 ) -> Result<Generated> {
     let frame = MoldFrame::new(model, plane);
     let model_mold = frame.to_mold(model);
-    let solid = model_mold
-        .to_manifold()
-        .map_err(|e| anyhow!("{e}"))
-        .context("the model is not a watertight solid")?;
+    let solid = model_mold.to_manifold().map_err(|e| anyhow!("{e}")).context("the model is not a watertight solid")?;
     let params = params.normalized(&mold.param_specs());
-    let input = MoldInput {
-        model: &solid,
-        model_mesh: &model_mold,
-        params: &params,
-        cancel,
-    };
+    let input = MoldInput { model: &solid, model_mesh: &model_mold, params: &params, cancel };
     let mut output = mold.generate(&input)?;
     let classes = classify_faces(&model_mold, mold.plane_usage());
     let undercuts = undercut_stats(&model_mold, &classes);
@@ -63,12 +55,7 @@ pub fn generate(
             ),
         );
     }
-    Ok(Generated {
-        frame,
-        model_mold,
-        output,
-        undercuts,
-    })
+    Ok(Generated { frame, model_mold, output, undercuts })
 }
 
 /// Arrange the printed parts of a generated mold for `printer`.
