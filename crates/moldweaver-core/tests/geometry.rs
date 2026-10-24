@@ -296,3 +296,33 @@ fn tilted_plane_matches_axis_aligned_result() {
     assert!(close(g1.output.report.cavity_ml, g0.output.report.cavity_ml, 0.01));
     assert!(close(g1.output.report.silicone_ml, g0.output.report.silicone_ml, 0.01));
 }
+
+#[test]
+fn undercut_safe_board_pulls_straight_off_the_dog() {
+    let dog = moldweaver_core::io::load_model(std::path::Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/fixtures/lowpoly_dog.stl"
+    )))
+    .unwrap();
+    // Split the standing dog through its body: the legs below the plane have
+    // undercut-free sides but the belly overhangs them.
+    let plane = PartingPlane { offset_mm: 4.0, ..Default::default() };
+    let collisions = |safe: bool| {
+        let p = params(&[("board_safe", ParamValue::Bool(safe)), ("keys", ParamValue::Bool(false))]);
+        let g = gen(&dog, plane, "two_part_box", &p);
+        assert_all_watertight(&g);
+        let board = solid_of(&g, "Parting board");
+        let model = g.model_mold.to_manifold().unwrap();
+        // Pull the board down in steps and measure overlap with the model.
+        (1..=40)
+            .map(|k| {
+                let moved = board.translate(solid::v3(DVec3::new(0.0, 0.0, -0.5 * k as f64)));
+                moved.intersection(&model).volume()
+            })
+            .fold(0.0, f64::max)
+    };
+    let safe = collisions(true);
+    let exact = collisions(false);
+    assert!(safe < 1e-3, "safe board collides: {safe}");
+    assert!(exact > 1.0, "the exact board should lock on this plane: {exact}");
+}

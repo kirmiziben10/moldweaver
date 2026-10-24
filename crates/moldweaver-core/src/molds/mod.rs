@@ -52,6 +52,14 @@ pub struct Part {
 
 impl Part {
     pub fn from_solid(name: impl Into<String>, role: PartRole, solid: &Manifold) -> Part {
+        // Collapse sliver triangles left over from booleans; keep the
+        // original if that fails (e.g. results of the robust engine).
+        let cleaned = solid.simplify(1e-4);
+        let solid = if crate::solid::ok(&cleaned) && (cleaned.volume() - solid.volume()).abs() <= 1e-6 * solid.volume().abs().max(1.0) {
+            &cleaned
+        } else {
+            solid
+        };
         Part {
             name: name.into(),
             role,

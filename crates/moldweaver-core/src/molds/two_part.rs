@@ -373,7 +373,8 @@ fn undercut_safe_cutter(model: &Manifold, below: &Manifold) -> std::result::Resu
     for i in 0..mesh.triangles.len() {
         let n = mesh.tri_normal(i);
         let tri = mesh.tri(i);
-        if n.z <= 0.02 || tri.iter().all(|p| p.z > -1e-4) {
+        // Any upward tilt counts: the board is rigid, unlike the silicone.
+        if n.z <= 1e-9 || tri.iter().all(|p| p.z > -1e-4) {
             continue;
         }
         let base = soup.positions.len() as u32;

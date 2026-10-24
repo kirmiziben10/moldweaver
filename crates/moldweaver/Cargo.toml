@@ -23,5 +23,6 @@ rfd = { version = "0.17", default-features = false, features = ["xdg-portal", "p
 dirs = "6"
 
 [dev-dependencies]
+serde_json.workspace = true
 zip.workspace = true
 quick-xml.workspace = true

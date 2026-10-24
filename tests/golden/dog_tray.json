@@ -1,0 +1,27 @@
+{
+  "cavity_ml": 149.5,
+  "model_ml": 7.3,
+  "mold_type": "open_tray",
+  "parts": [
+    {
+      "name": "Tray walls",
+      "role": "printed",
+      "volume_ml": 41.9
+    },
+    {
+      "name": "Tray base",
+      "role": "printed",
+      "volume_ml": 50.5
+    },
+    {
+      "name": "Silicone (pour 1)",
+      "role": "silicone-pour-1",
+      "volume_ml": 142.1
+    }
+  ],
+  "pours_ml": [
+    142.1
+  ],
+  "printer": "Creality Ender 3 V3 SE",
+  "silicone_ml": 142.1
+}
